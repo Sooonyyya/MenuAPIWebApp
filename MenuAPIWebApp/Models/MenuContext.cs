@@ -6,9 +6,9 @@ namespace MenuAPIWebApp.Models
     {
         public MenuContext(DbContextOptions<MenuContext> options) : base(options)
         {
-            // EnsureCreated() ВИДАЛЕНО — тепер керуємо базою тільки через міграції
         }
 
+        public DbSet<User> Users { get; set; }
         public DbSet<Dish> Dishes { get; set; }
         public DbSet<DishType> DishTypes { get; set; }
         public DbSet<Ingredient> Ingredients { get; set; }
@@ -20,7 +20,6 @@ namespace MenuAPIWebApp.Models
         {
             base.OnModelCreating(modelBuilder);
 
-            // Налаштування для зв’язку many-to-many Dish <-> Ingredient
             modelBuilder.Entity<DishIngredient>()
                 .HasKey(di => new { di.DishId, di.IngredientId });
 
@@ -33,6 +32,18 @@ namespace MenuAPIWebApp.Models
                 .HasOne(di => di.Ingredient)
                 .WithMany(i => i.DishIngredients)
                 .HasForeignKey(di => di.IngredientId);
+
+            modelBuilder.Entity<FavoriteDish>()
+                .HasOne(fd => fd.User)
+                .WithMany()
+                .HasForeignKey(fd => fd.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Review>()
+                .HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

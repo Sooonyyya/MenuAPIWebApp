@@ -8,11 +8,14 @@ namespace MenuAPIWebApp.Models
         [Key]
         public int Id { get; set; }
 
-        [Required]
-        public string UserName { get; set; }
+        [ForeignKey("User")]
+        public int UserId { get; set; }
+        public User User { get; set; }
 
+        [Required]
         public string Comment { get; set; }
 
+        [Required]
         public int Rating { get; set; }
 
         [ForeignKey("Dish")]
