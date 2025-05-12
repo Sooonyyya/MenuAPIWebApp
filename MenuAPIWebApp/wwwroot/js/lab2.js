@@ -242,6 +242,42 @@ async function showDish(id) {
 
     document.getElementById("dish-dialog").showModal();
 }
+async function editDish(id) {
+    const res = await fetch(`${API_BASE}/Dishes/${id}`);
+    const dish = await res.json();
+
+    // Встановлюємо значення у форму
+    document.getElementById("edit-dish-id").value = dish.id;
+    document.getElementById("edit-dish-name").value = dish.name;
+    document.getElementById("edit-dish-description").value = dish.description || "";
+    document.getElementById("edit-dish-price").value = dish.price;
+    document.getElementById("edit-dish-calories").value = dish.calories;
+
+    // Завантаження типів страв
+    const typeSelect = document.getElementById("edit-dish-type");
+    const typeRes = await fetch("/api/DishTypes");
+    const types = await typeRes.json();
+    typeSelect.innerHTML = types.map(t =>
+        `<option value="${t.id}" ${t.id === dish.dishTypeId ? "selected" : ""}>${t.name}</option>`
+    ).join("");
+
+    // Завантаження інгредієнтів
+    const ingContainer = document.getElementById("edit-dish-ingredients");
+    const ingRes = await fetch("/api/Ingredients");
+    const ingredients = await ingRes.json();
+
+    const selectedIngredientIds = dish.dishIngredients.map(di => di.ingredientId || di.ingredient.id);
+
+    ingContainer.innerHTML = ingredients.map(i => `
+        <label>
+            <input type="checkbox" value="${i.id}" ${selectedIngredientIds.includes(i.id) ? "checked" : ""}>
+            ${i.name}
+        </label><br>
+    `).join("");
+
+    document.getElementById("edit-dish-title").textContent = "Редагувати страву";
+    document.getElementById("edit-dish-dialog").showModal();
+}
 
 function loadAddDishButton() {
     document.getElementById("add-dish-button").onclick = async () => {
