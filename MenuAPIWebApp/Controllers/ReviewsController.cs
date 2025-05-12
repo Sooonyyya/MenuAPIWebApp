@@ -1,70 +1,37 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MenuAPIWebApp.Models;
+using MenuAPIWebApp.Models.DTO;
 
-namespace MenuAPIWebApp.Controllers
+[Route("api/[controller]")]
+[ApiController]
+public class ReviewsController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class ReviewsController : ControllerBase
+    private readonly MenuContext _context;
+
+    public ReviewsController(MenuContext context) => _context = context;
+
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Review>>> Get() =>
+        await _context.Reviews.Include(r => r.Dish).ToListAsync();
+
+    [HttpPost]
+    public async Task<ActionResult<Review>> Post(ReviewDTO dto)
     {
-        private readonly MenuContext _context;
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
 
-        public ReviewsController(MenuContext context)
+        var review = new Review
         {
-            _context = context;
-        }
+            DishId = dto.DishId,
+            UserName = dto.UserName,
+            Text = dto.Text,
+            CreatedAt = DateTime.UtcNow
+        };
 
-        [HttpGet("{dishId}")]
-        public async Task<ActionResult<IEnumerable<Review>>> GetByDish(int dishId)
-        {
-            return await _context.Reviews
-                .Where(r => r.DishId == dishId)
-                .Include(r => r.User)
-                .ToListAsync();
-        }
+        _context.Reviews.Add(review);
+        await _context.SaveChangesAsync();
 
-        // Приклад POST: api/reviews?username=Sofia
-        [HttpPost]
-        public async Task<IActionResult> Add([FromQuery] string username, [FromBody] Review review)
-        {
-            if (review.Rating < 1 || review.Rating > 5)
-                return BadRequest("Рейтинг має бути від 1 до 5.");
-
-            if (string.IsNullOrWhiteSpace(username))
-                return BadRequest("Ім’я користувача обов'язкове.");
-
-            // Шукаємо або створюємо юзера
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == username);
-            if (user == null)
-            {
-                user = new User
-                {
-                    UserName = username,
-                    Email = $"{Guid.NewGuid()}@generated.local",
-                    PasswordHash = Guid.NewGuid().ToString()
-                };
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync();
-            }
-
-            review.UserId = user.Id;
-
-            _context.Reviews.Add(review);
-            await _context.SaveChangesAsync();
-
-            return Ok(review);
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
-        {
-            var review = await _context.Reviews.FindAsync(id);
-            if (review == null) return NotFound();
-
-            _context.Reviews.Remove(review);
-            await _context.SaveChangesAsync();
-            return NoContent();
-        }
+        return CreatedAtAction(nameof(Post), new { id = review.Id }, review);
     }
 }

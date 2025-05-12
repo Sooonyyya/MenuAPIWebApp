@@ -1,31 +1,135 @@
-html {
-  font-size: 14px;
-}
-
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
-}
+/* site.css */
 
 body {
-  margin-bottom: 60px;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #f8f8f8;
+    color: #333;
 }
 
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
+header {
+    background-color: #333;
+    color: white;
+    padding: 1rem;
+    text-align: center;
 }
 
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-  text-align: start;
+nav#dish-types {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
 }
+
+    nav#dish-types button {
+        padding: 0.5rem 1rem;
+        background-color: #eee;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+    }
+
+        nav#dish-types button.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+main {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#dish-list, #favorite-dishes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    width: 100%;
+    max-width: 1200px;
+    margin-top: 1rem;
+}
+
+.dish-card {
+    background-color: white;
+    border-radius: 10px;
+    padding: 1rem;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+    .dish-card h3 {
+        margin-top: 0;
+    }
+
+    .dish-card button {
+        margin-top: 0.5rem;
+        padding: 0.5rem 1rem;
+        border: none;
+        background-color: #007BFF;
+        color: white;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+
+    .dish-card .heart {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 1.5rem;
+        color: lightgray;
+        cursor: pointer;
+        transition: color 0.3s;
+    }
+
+        .dish-card .heart.active {
+            color: red;
+        }
+
+dialog {
+    padding: 1rem;
+    border: none;
+    border-radius: 10px;
+    max-width: 500px;
+    width: 90%;
+}
+
+    dialog form {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+textarea, input[type="text"] {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+button#send-review {
+    background-color: #28a745;
+    color: white;
+}
+
+button#close-dialog {
+    background-color: #dc3545;
+    color: white;
+}
+
+#dish-reviews {
+    margin-top: 1rem;
+    max-height: 150px;
+    overflow-y: auto;
+    border-top: 1px solid #ccc;
+    padding-top: 0.5rem;
+    font-size: 0.9rem;
+}
+
+    #dish-reviews p {
+        margin: 0.5rem 0;
+        border-bottom: 1px dashed #ddd;
+        padding-bottom: 0.5rem;
+    }

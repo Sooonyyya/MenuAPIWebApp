@@ -1,0 +1,129 @@
+﻿<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Улюблені страви</title>
+    <link rel="stylesheet" href="/css/site.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(to right, #fffaf0, #f0fff0);
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        .nav {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+            .nav a {
+                margin: 0 10px;
+                padding: 10px 20px;
+                background-color: #009688;
+                color: white;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: bold;
+                transition: background-color 0.3s;
+            }
+
+                .nav a:hover {
+                    background-color: #00796b;
+                }
+
+        .dish-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .dish-card {
+            background-color: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            width: 280px;
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+
+            .dish-card:hover {
+                transform: scale(1.03);
+            }
+
+            .dish-card h3 {
+                margin: 0 0 10px;
+                color: #333;
+            }
+
+        .heart {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            cursor: pointer;
+            font-size: 22px;
+            color: red;
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+
+            .heart.animate {
+                transform: scale(1.4);
+            }
+    </style>
+</head>
+<body>
+    <h1>Улюблені страви</h1>
+    <div class="nav">
+        <a href="/index.html">Головна</a>
+        <a href="/compare.html">Порівняння страв</a>
+    </div>
+    <div class="dish-list" id="favorite-dishes"></div>
+
+    <script>
+        const sessionId = localStorage.getItem("sessionId");
+
+        window.onload = async () => {
+            await loadFavorites();
+        };
+
+        async function loadFavorites() {
+            const response = await fetch(`/api/FavoriteDishes/${sessionId}`);
+            const dishes = await response.json();
+            const container = document.getElementById("favorite-dishes");
+            container.innerHTML = "";
+
+            if (dishes.length === 0) {
+                container.innerHTML = "<p style='text-align:center'>Немає улюблених страв 😢</p>";
+                return;
+            }
+
+            dishes.forEach(d => {
+                const card = document.createElement("div");
+                card.className = "dish-card";
+                card.innerHTML = `
+                        <h3>${d.name}</h3>
+                        <p>${d.description || "Без опису"}</p>
+                        <p><strong>${d.price.toFixed(2)}</strong> грн</p>
+                        <span class="heart active" style="color:red" onclick="toggleFavorite(${d.id}, this)">&#10084;</span>
+                    `;
+                container.appendChild(card);
+            });
+        }
+
+        async function toggleFavorite(id, el) {
+            const url = `/api/FavoriteDishes/${sessionId}/${id}`;
+            await fetch(url, { method: "DELETE" });
+            el.classList.add("animate");
+            setTimeout(() => el.classList.remove("animate"), 300);
+            await loadFavorites();
+        }
+    </script>
+</body>
+</html>

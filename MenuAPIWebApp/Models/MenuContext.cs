@@ -1,49 +1,30 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace MenuAPIWebApp.Models
+public class MenuContext : DbContext
 {
-    public class MenuContext : DbContext
+    public MenuContext(DbContextOptions<MenuContext> options) : base(options) { }
+
+    public DbSet<Dish> Dishes => Set<Dish>();
+    public DbSet<DishType> DishTypes => Set<DishType>();
+    public DbSet<Ingredient> Ingredients => Set<Ingredient>();
+    public DbSet<DishIngredient> DishIngredients => Set<DishIngredient>();
+    public DbSet<FavoriteDish> FavoriteDishes => Set<FavoriteDish>();
+    public DbSet<Review> Reviews => Set<Review>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        public MenuContext(DbContextOptions<MenuContext> options) : base(options)
-        {
-        }
+        // Composite primary key for DishIngredient
+        modelBuilder.Entity<DishIngredient>()
+            .HasKey(di => new { di.DishId, di.IngredientId });
 
-        public DbSet<User> Users { get; set; }
-        public DbSet<Dish> Dishes { get; set; }
-        public DbSet<DishType> DishTypes { get; set; }
-        public DbSet<Ingredient> Ingredients { get; set; }
-        public DbSet<DishIngredient> DishIngredients { get; set; }
-        public DbSet<Review> Reviews { get; set; }
-        public DbSet<FavoriteDish> FavoriteDishes { get; set; }
+        modelBuilder.Entity<DishIngredient>()
+            .HasOne(di => di.Dish)
+            .WithMany(d => d.DishIngredients)
+            .HasForeignKey(di => di.DishId);
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
-
-            modelBuilder.Entity<DishIngredient>()
-                .HasKey(di => new { di.DishId, di.IngredientId });
-
-            modelBuilder.Entity<DishIngredient>()
-                .HasOne(di => di.Dish)
-                .WithMany(d => d.DishIngredients)
-                .HasForeignKey(di => di.DishId);
-
-            modelBuilder.Entity<DishIngredient>()
-                .HasOne(di => di.Ingredient)
-                .WithMany(i => i.DishIngredients)
-                .HasForeignKey(di => di.IngredientId);
-
-            modelBuilder.Entity<FavoriteDish>()
-                .HasOne(fd => fd.User)
-                .WithMany()
-                .HasForeignKey(fd => fd.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<Review>()
-                .HasOne(r => r.User)
-                .WithMany()
-                .HasForeignKey(r => r.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-        }
+        modelBuilder.Entity<DishIngredient>()
+            .HasOne(di => di.Ingredient)
+            .WithMany(i => i.DishIngredients)
+            .HasForeignKey(di => di.IngredientId);
     }
 }

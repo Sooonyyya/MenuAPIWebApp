@@ -1,148 +1,198 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿// DishesController.cs
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MenuAPIWebApp.Models;
+using MenuAPIWebApp.Models.DTO;
 
-namespace MenuAPIWebApp.Controllers
+[Route("api/[controller]")]
+[ApiController]
+public class DishesController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class DishesController : ControllerBase
+    private readonly MenuContext _context;
+
+    public DishesController(MenuContext context) => _context = context;
+
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Dish>>> Get() =>
+        await _context.Dishes
+            .Include(d => d.DishType)
+            .Include(d => d.DishIngredients).ThenInclude(di => di.Ingredient)
+            .Include(d => d.Reviews)
+            .ToListAsync();
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Dish>> Get(int id)
     {
-        private readonly MenuContext _context;
+        var dish = await _context.Dishes
+            .Include(d => d.DishType)
+            .Include(d => d.DishIngredients).ThenInclude(di => di.Ingredient)
+            .Include(d => d.Reviews)
+            .FirstOrDefaultAsync(d => d.Id == id);
 
-        public DishesController(MenuContext context)
+        return dish == null ? NotFound() : dish;
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<Dish>> Post(DishDTO dto)
+    {
+        var dish = new Dish
         {
-            _context = context;
+            Name = dto.Name,
+            Description = dto.Description,
+            Price = dto.Price,
+            Calories = dto.Calories,
+            DishTypeId = dto.DishTypeId
+        };
+
+        _context.Dishes.Add(dish);
+        await _context.SaveChangesAsync();
+
+        foreach (var ingId in dto.IngredientIds)
+        {
+            _context.DishIngredients.Add(new DishIngredient
+            {
+                DishId = dish.Id,
+                IngredientId = ingId
+            });
         }
 
-        // Відкрити меню
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Dish>>> GetAll()
+        await _context.SaveChangesAsync();
+        return CreatedAtAction(nameof(Get), new { id = dish.Id }, dish);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Put(int id, DishDTO dto)
+    {
+        if (id != dto.Id)
+            return BadRequest();
+
+        var dish = await _context.Dishes
+            .Include(d => d.DishIngredients)
+            .FirstOrDefaultAsync(d => d.Id == id);
+
+        if (dish == null)
+            return NotFound();
+
+        // Оновлюємо основні поля
+        dish.Name = dto.Name;
+        dish.Description = dto.Description;
+        dish.Price = dto.Price;
+        dish.Calories = dto.Calories;
+        dish.DishTypeId = dto.DishTypeId;
+
+        // Видаляємо попередні зв'язки з інгредієнтами
+        _context.DishIngredients.RemoveRange(dish.DishIngredients);
+        await _context.SaveChangesAsync();
+
+        // Додаємо нові зв’язки
+        foreach (var ingId in dto.IngredientIds)
         {
-            return await _context.Dishes
-                .Include(d => d.DishType)
-                .Include(d => d.DishIngredients)
-                    .ThenInclude(di => di.Ingredient)
-                .ToListAsync();
+            var newIngredient = new DishIngredient
+            {
+                DishId = dish.Id,
+                IngredientId = ingId
+            };
+            _context.Entry(newIngredient).State = EntityState.Added;
         }
 
-        // Переглянути детальну інформацію про страву
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Dish>> Get(int id)
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var dish = await _context.Dishes.FindAsync(id);
+        if (dish == null) return NotFound();
+        _context.Dishes.Remove(dish);
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
+
+
+    // Пошук за частиною назви
+    [HttpGet("search")]
+    public async Task<ActionResult<IEnumerable<Dish>>> SearchByName([FromQuery] string query)
+    {
+        return await _context.Dishes
+            .Where(d => d.Name.Contains(query))
+            .Include(d => d.DishType)
+            .ToListAsync();
+    }
+
+    // Сортування за ціною
+    [HttpGet("sorted")]
+    public async Task<ActionResult<IEnumerable<Dish>>> GetSorted([FromQuery] bool desc = false)
+    {
+        var dishes = _context.Dishes.Include(d => d.DishType).AsQueryable();
+        dishes = desc ? dishes.OrderByDescending(d => d.Price) : dishes.OrderBy(d => d.Price);
+        return await dishes.ToListAsync();
+    }
+
+    // Порівняння за калорійністю
+    [HttpPost("compare/calories")]
+    public async Task<ActionResult<IEnumerable<Dish>>> CompareByCalories([FromBody] List<int> ids)
+    {
+        return await _context.Dishes
+            .Where(d => ids.Contains(d.Id))
+            .OrderByDescending(d => d.Calories)
+            .ToListAsync();
+    }
+
+    // Порівняння за ціною
+    [HttpPost("compare/price")]
+    public async Task<ActionResult<IEnumerable<Dish>>> CompareByPrice([FromBody] List<int> ids)
+    {
+        return await _context.Dishes
+            .Where(d => ids.Contains(d.Id))
+            .OrderBy(d => d.Price)
+            .ToListAsync();
+    }
+
+    // Порівняння за інгредієнтами
+    [HttpPost("compare/ingredients")]
+    public async Task<ActionResult<IEnumerable<object>>> CompareByIngredients([FromBody] List<int> ids)
+    {
+        var dishes = await _context.Dishes
+            .Where(d => ids.Contains(d.Id))
+            .Include(d => d.DishIngredients).ThenInclude(di => di.Ingredient)
+            .ToListAsync();
+
+        return dishes.Select(d => new
         {
-            var dish = await _context.Dishes
-                .Include(d => d.DishType)
-                .Include(d => d.DishIngredients)
-                    .ThenInclude(di => di.Ingredient)
-                .FirstOrDefaultAsync(d => d.Id == id);
+            d.Id,
+            d.Name,
+            IngredientCount = d.DishIngredients.Count,
+            Ingredients = d.DishIngredients.Select(i => i.Ingredient.Name)
+        }).ToList();
+    }
 
-            if (dish == null) return NotFound();
-            return dish;
-        }
+    // Фільтрація по назві, типу, ціні
+    [HttpGet("filter")]
+    public async Task<ActionResult<IEnumerable<Dish>>> Filter(
+        [FromQuery] string? name,
+        [FromQuery] int? typeId,
+        [FromQuery] decimal? minPrice,
+        [FromQuery] decimal? maxPrice)
+    {
+        var query = _context.Dishes
+            .Include(d => d.DishType)
+            .AsQueryable();
 
-        // Відфільтрувати меню
-        [HttpGet("Filter")]
-        public async Task<ActionResult<IEnumerable<Dish>>> Filter([FromQuery] string? name, [FromQuery] int? typeId, [FromQuery] decimal? price)
-        {
-            var query = _context.Dishes.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(name))
+            query = query.Where(d => d.Name.Contains(name));
 
-            if (!string.IsNullOrEmpty(name))
-                query = query.Where(d => d.Name.Contains(name));
-            if (typeId.HasValue)
-                query = query.Where(d => d.DishTypeId == typeId);
-            if (price.HasValue)
-                query = query.Where(d => d.Price <= price);
+        if (typeId.HasValue)
+            query = query.Where(d => d.DishTypeId == typeId);
 
-            return await query
-                .Include(d => d.DishType)
-                .ToListAsync();
-        }
+        if (minPrice.HasValue)
+            query = query.Where(d => d.Price >= minPrice);
 
-        // Порівняння за ціною
-        [HttpGet("CompareByPrice")]
-        public async Task<ActionResult<IEnumerable<Dish>>> CompareByPrice()
-        {
-            return await _context.Dishes
-                .OrderBy(d => d.Price)
-                .ToListAsync();
-        }
+        if (maxPrice.HasValue)
+            query = query.Where(d => d.Price <= maxPrice);
 
-        // Порівняння за калорійністю
-        [HttpGet("CompareByCalories")]
-        public async Task<ActionResult<IEnumerable<Dish>>> CompareByCalories()
-        {
-            return await _context.Dishes
-                .OrderBy(d => d.Calories)
-                .ToListAsync();
-        }
-
-        // Порівняння за інгредієнтами (всі задані мають бути в страві)
-        [HttpPost("CompareByIngredients")]
-        public ActionResult<IEnumerable<Dish>> CompareByIngredients([FromBody] List<int> ingredientIds)
-        {
-            var dishes = _context.Dishes
-                .Include(d => d.DishIngredients)
-                .Where(d => ingredientIds.All(id => d.DishIngredients.Any(di => di.IngredientId == id)))
-                .ToList();
-
-            return dishes;
-        }
-
-        // Додати нову страву (адмін)
-        [HttpPost]
-        public async Task<ActionResult<Dish>> Post(Dish dish)
-        {
-            _context.Dishes.Add(dish);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(Get), new { id = dish.Id }, dish);
-        }
-
-        // Змінити страву (адмін)
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, Dish dish)
-        {
-            if (id != dish.Id) return BadRequest();
-            _context.Entry(dish).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-            return NoContent();
-        }
-
-        // Видалити страву (адмін)
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
-        {
-            var dish = await _context.Dishes.FindAsync(id);
-            if (dish == null) return NotFound();
-            _context.Dishes.Remove(dish);
-            await _context.SaveChangesAsync();
-            return NoContent();
-        }
-
-        // Додати в обране
-        [HttpPost("AddToFavorites")]
-        public async Task<IActionResult> AddToFavorites([FromBody] FavoriteDish favorite)
-        {
-            _context.FavoriteDishes.Add(favorite);
-            await _context.SaveChangesAsync();
-            return Ok();
-        }
-
-        // Залишити відгук
-        [HttpPost("AddReview")]
-        public async Task<IActionResult> AddReview([FromBody] Review review)
-        {
-            _context.Reviews.Add(review);
-            await _context.SaveChangesAsync();
-            return Ok();
-        }
-
-        // Отримати всі відгуки по страві
-        [HttpGet("{dishId}/reviews")]
-        public async Task<ActionResult<IEnumerable<Review>>> GetReviewsForDish(int dishId)
-        {
-            return await _context.Reviews
-                .Where(r => r.DishId == dishId)
-                .ToListAsync();
-        }
+        return await query.ToListAsync();
     }
 }

@@ -1,79 +1,64 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MenuAPIWebApp.Models;
 
-namespace MenuAPIWebApp.Controllers
+[Route("api/[controller]")]
+[ApiController]
+public class FavoriteDishesController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class FavoriteDishesController : ControllerBase
+    private readonly MenuContext _context;
+
+    public FavoriteDishesController(MenuContext context) => _context = context;
+
+    [HttpGet("{sessionId}")]
+    public async Task<ActionResult<IEnumerable<Dish>>> GetFavorites(string sessionId)
     {
-        private readonly MenuContext _context;
+        var favorites = await _context.FavoriteDishes
+            .Where(f => f.UserSessionId == sessionId)
+            .Select(f => f.DishId)
+            .ToListAsync();
 
-        public FavoriteDishesController(MenuContext context)
+        var dishes = await _context.Dishes
+            .Where(d => favorites.Contains(d.Id))
+            .Include(d => d.DishType)
+            .Include(d => d.DishIngredients).ThenInclude(di => di.Ingredient)
+            .Include(d => d.Reviews)
+            .ToListAsync();
+
+        return dishes;
+    }
+
+
+    [HttpPost]
+    public async Task<IActionResult> AddFavorite(FavoriteDishDTO fav)
+    {
+        var exists = await _context.FavoriteDishes
+            .AnyAsync(f => f.UserSessionId == fav.UserSessionId && f.DishId == fav.DishId);
+
+        if (!exists)
         {
-            _context = context;
-        }
-
-        // Отримати улюблені страви користувача
-        [HttpGet("{username}")]
-        public async Task<ActionResult<IEnumerable<FavoriteDish>>> GetByUser(string username)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == username);
-            if (user == null)
-                return NotFound("Користувача не знайдено");
-
-            var favorites = await _context.FavoriteDishes
-                .Where(fd => fd.UserId == user.Id)
-                .Include(fd => fd.Dish)
-                .ToListAsync();
-
-            return Ok(favorites);
-        }
-
-        // Додати улюблену страву
-        [HttpPost]
-        public async Task<IActionResult> Add([FromQuery] string username, [FromBody] FavoriteDish favoriteDish)
-        {
-            if (string.IsNullOrWhiteSpace(username))
-                return BadRequest("Ім’я користувача обов’язкове.");
-
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == username);
-            if (user == null)
+            _context.FavoriteDishes.Add(new FavoriteDish
             {
-                user = new User
-                {
-                    UserName = username,
-                    Email = $"{Guid.NewGuid()}@generated.user",
-                    PasswordHash = Guid.NewGuid().ToString()
-                };
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync();
-            }
-
-            // ❗ Перевірка: чи вже існує ця улюблена страва для користувача
-            bool alreadyExists = await _context.FavoriteDishes
-                .AnyAsync(fd => fd.UserId == user.Id && fd.DishId == favoriteDish.DishId);
-
-            if (alreadyExists)
-                return Conflict("Ця страва вже додана до улюблених.");
-
-            favoriteDish.UserId = user.Id;
-            _context.FavoriteDishes.Add(favoriteDish);
+                DishId = fav.DishId,
+                UserSessionId = fav.UserSessionId
+            });
             await _context.SaveChangesAsync();
-
-            return Ok(favoriteDish);
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
-        {
-            var favorite = await _context.FavoriteDishes.FindAsync(id);
-            if (favorite == null) return NotFound();
+        return Ok();
+    }
 
-            _context.FavoriteDishes.Remove(favorite);
-            await _context.SaveChangesAsync();
-            return NoContent();
-        }
+
+    [HttpDelete("{sessionId}/{dishId}")]
+    public async Task<IActionResult> RemoveFavorite(string sessionId, int dishId)
+    {
+        var fav = await _context.FavoriteDishes
+            .FirstOrDefaultAsync(f => f.UserSessionId == sessionId && f.DishId == dishId);
+
+        if (fav == null) return NotFound();
+
+        _context.FavoriteDishes.Remove(fav);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
     }
 }

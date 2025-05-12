@@ -1,11 +1,12 @@
-﻿namespace MenuAPIWebApp.Models
-{
-    public class DishIngredient
-    {
-        public int DishId { get; set; }
-        public Dish Dish { get; set; }
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
-        public int IngredientId { get; set; }
-        public Ingredient Ingredient { get; set; }
-    }
+public class DishIngredient
+{
+    [ForeignKey("Dish")]
+    public int DishId { get; set; }
+    public Dish Dish { get; set; } = null!;
+
+    [ForeignKey("Ingredient")]
+    public int IngredientId { get; set; }
+    public Ingredient Ingredient { get; set; } = null!;
 }

@@ -1,0 +1,165 @@
+﻿<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Порівняння страв</title>
+    <link rel="stylesheet" href="/css/site.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #fff7e6, #f0fff0);
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #3b3b3b;
+        }
+
+        .top-buttons {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+            .top-buttons a {
+                display: inline-block;
+                margin: 0 10px;
+                padding: 10px 20px;
+                border-radius: 8px;
+                background-color: #009688;
+                color: white;
+                text-decoration: none;
+                font-weight: bold;
+                transition: background-color 0.3s;
+            }
+
+                .top-buttons a:hover {
+                    background-color: #00796b;
+                }
+
+        .compare-form {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+            .compare-form input {
+                width: 300px;
+                padding: 10px;
+                font-size: 16px;
+                border-radius: 10px;
+                border: 1px solid #ccc;
+                margin-right: 10px;
+            }
+
+            .compare-form button {
+                padding: 10px 20px;
+                font-size: 16px;
+                border: none;
+                border-radius: 10px;
+                background-color: #ff914d;
+                color: white;
+                cursor: pointer;
+            }
+
+        .result-section {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .dish-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+            padding: 20px;
+            max-width: 300px;
+            width: 100%;
+            transition: transform 0.3s ease;
+        }
+
+            .dish-card:hover {
+                transform: scale(1.03);
+            }
+
+            .dish-card h2 {
+                margin-top: 0;
+                color: #333;
+            }
+
+            .dish-card p {
+                margin: 6px 0;
+                color: #555;
+            }
+
+        .dish-highlight {
+            font-weight: bold;
+            color: #e67300;
+        }
+    </style>
+</head>
+<body>
+    <h1>Порівняння страв</h1>
+    <div class="top-buttons">
+        <a href="/index.html">Головна</a>
+        <a href="/favorite.html">Улюблені страви</a>
+    </div>
+    <div class="compare-form">
+        <input id="compare-names" type="text" placeholder="Введіть назви страв через кому">
+        <button onclick="runCompare()">Порівняти</button>
+    </div>
+    <div id="results" class="result-section"></div>
+
+    <script>
+        const API_BASE = '/api';
+        let allDishes = [];
+
+        window.onload = async () => {
+            const res = await fetch(`${API_BASE}/Dishes`);
+            allDishes = await res.json();
+        };
+
+        async function runCompare() {
+            const input = document.getElementById("compare-names").value.trim();
+            const names = input.toLowerCase().split(',').map(n => n.trim());
+            const matched = allDishes.filter(d => names.includes(d.name.toLowerCase()));
+
+            if (!matched.length) {
+                document.getElementById("results").innerHTML = '<p>Страви не знайдено 😢</p>';
+                return;
+            }
+
+            const ids = matched.map(d => d.id);
+
+            const [caloriesRes, priceRes, ingRes] = await Promise.all([
+                fetch(`${API_BASE}/Dishes/compare/calories`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ids) }),
+                fetch(`${API_BASE}/Dishes/compare/price`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ids) }),
+                fetch(`${API_BASE}/Dishes/compare/ingredients`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ids) })
+            ]);
+
+            const [calories, prices, ingredients] = await Promise.all([
+                caloriesRes.json(), priceRes.json(), ingRes.json()
+            ]);
+
+            let html = '';
+            matched.forEach(dish => {
+                const c = calories.find(x => x.id === dish.id)?.calories;
+                const p = prices.find(x => x.id === dish.id)?.price;
+                const i = ingredients.find(x => x.id === dish.id);
+
+                html += `
+                    <div class="dish-card">
+                        <h2>${dish.name}</h2>
+                        <p><span class="dish-highlight">Ціна:</span> ${p} грн</p>
+                        <p><span class="dish-highlight">Калорійність:</span> ${c} ккал</p>
+                        <p><span class="dish-highlight">Інгредієнти:</span> ${i.ingredients.join(', ')}</p>
+                    </div>
+                    `;
+            });
+
+            document.getElementById("results").innerHTML = html;
+        }
+    </script>
+</body>
+</html>
