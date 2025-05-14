@@ -9,68 +9,79 @@
 <body>
     <header>
         <h1>Меню ресторану</h1>
+
         <nav id="dish-types"></nav>
-        <button id="add-dish-button">Додати страву</button>
-        <a href="/compare.html" class="btn-nav">Порівняння страв</a>
-        <a href="/favorite.html" class="btn-nav">Улюблені страви</a>
+
+
     </header>
 
+
     <main>
+        <div class="dish-actions">
+            <a href="javascript:void(0)" id="add-dish-button" class="btn-nav">Додати страву</a>
+            <a href="/compare.html" class="btn-nav">Відображення страв для порівняння</a>
+            <a href="/favorite.html" class="btn-nav">Улюблені страви</a>
+        </div>
+
         <section id="dish-list"></section>
         <h2>Обрані страви</h2>
         <section id="favorite-dishes"></section>
-    </main>
+        <section id="dish-list"></section>
+        <h2>Обрані страви</h2>
+        <section id="favorite-dishes"></section>
 
-    <dialog id="dish-dialog">
-        <form method="dialog">
-            <h2 id="dish-dialog-title">Страва</h2>
-            <p><strong>Опис:</strong> <span id="dish-description"></span></p>
-            <p><strong>Ціна:</strong> <span id="dish-price"></span> грн</p>
-            <p><strong>Калорійність:</strong> <span id="dish-calories"></span> ккал</p>
-            <p><strong>Інгредієнти:</strong> <span id="dish-ingredients"></span></p>
+        <dialog id="dish-dialog">
+            <form method="dialog">
+                <h2 id="dish-dialog-title">Страва</h2>
+                <p><strong>Опис:</strong> <span id="dish-description"></span></p>
+                <p><strong>Ціна:</strong> <span id="dish-price"></span> грн</p>
+                <p><strong>Калорійність:</strong> <span id="dish-calories"></span> ккал</p>
+                <p><strong>Інгредієнти:</strong> <span id="dish-ingredients"></span></p>
 
-            <h3>Залишити відгук</h3>
-            <input type="text" id="review-name" placeholder="Ваше ім'я" required><br>
-            <textarea id="review-text" placeholder="Ваш відгук" required></textarea><br>
-            <button type="button" id="send-review">Надіслати</button>
-            <button type="button" id="close-dialog">Закрити</button>
+                <h3>Залишити відгук</h3>
+                <input type="text" id="review-name" placeholder="Ваше ім'я" required><br>
+                <textarea id="review-text" placeholder="Ваш відгук" required></textarea><br>
+                <button type="button" id="send-review">Надіслати</button>
+                <button type="button" id="close-dialog">Закрити</button>
 
-            <div id="dish-reviews"></div>
-        </form>
-    </dialog>
+                <div id="dish-reviews"></div>
+            </form>
+        </dialog>
 
-    <dialog id="edit-dish-dialog">
-        <form method="dialog" id="dish-form">
-            <h2 id="edit-dish-title">Нова страва</h2>
-            <input type="hidden" id="edit-dish-id">
-            <label>Назва: <input type="text" id="edit-dish-name" required></label><br>
-            <label>Опис: <input type="text" id="edit-dish-description"></label><br>
-            <label>Ціна: <input type="number" id="edit-dish-price" step="0.01" required></label><br>
-            <label>Калорії: <input type="number" id="edit-dish-calories" required></label><br>
-            <label>Тип страви:
-                <select id="edit-dish-type"></select>
-            </label><br>
-            <label>Інгредієнти:</label><br>
-            <div id="edit-dish-ingredients"></div>
-            <button type="submit">Зберегти</button>
-            <button type="button" id="cancel-edit">Скасувати</button>
-        </form>
-    </dialog>
+        <dialog id="edit-dish-dialog">
+            <form method="dialog" id="dish-form">
+                <h2 id="edit-dish-title">Нова страва</h2>
+                <input type="hidden" id="edit-dish-id">
+                <label>Назва: <input type="text" id="edit-dish-name" required></label><br>
+                <label>Опис: <input type="text" id="edit-dish-description"></label><br>
+                <label>Ціна: <input type="number" id="edit-dish-price" step="0.01" required></label><br>
+                <label>Калорії: <input type="number" id="edit-dish-calories" required></label><br>
+                <label>
+                    Тип страви:
+                    <select id="edit-dish-type"></select>
+                </label><br>
+                <label>Інгредієнти:</label><br>
+                <div id="edit-dish-ingredients"></div>
+                <button type="submit">Зберегти</button>
+                <button type="button" id="cancel-edit">Скасувати</button>
+            </form>
+        </dialog>
 
-    <style>
-        .btn-nav {
-            display: inline-block;
-            margin-left: 10px;
-            padding: 8px 14px;
-            background-color: #00796b;
-            color: white;
-            border-radius: 6px;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        .btn-nav:hover {
-            background-color: #005a48;
-        }
-    </style>
+        <style>
+            .btn-nav {
+                display: inline-block;
+                margin-left: 10px;
+                padding: 8px 14px;
+                background-color: #00796b;
+                color: white;
+                border-radius: 6px;
+                text-decoration: none;
+                font-weight: bold;
+            }
+
+                .btn-nav:hover {
+                    background-color: #005a48;
+                }
+        </style>
 </body>
 </html>

@@ -16,10 +16,11 @@ public class ReviewsController : ControllerBase
         await _context.Reviews.Include(r => r.Dish).ToListAsync();
 
     [HttpPost]
-    public async Task<ActionResult<Review>> Post(ReviewDTO dto)
+    public async Task<IActionResult> Post(ReviewDTO dto)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        var dishExists = await _context.Dishes.AnyAsync(d => d.Id == dto.DishId);
+        if (!dishExists)
+            return BadRequest($"Страва з Id = {dto.DishId} не існує.");
 
         var review = new Review
         {
@@ -34,4 +35,5 @@ public class ReviewsController : ControllerBase
 
         return CreatedAtAction(nameof(Post), new { id = review.Id }, review);
     }
+
 }

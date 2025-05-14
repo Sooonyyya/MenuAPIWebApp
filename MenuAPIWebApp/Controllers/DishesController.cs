@@ -63,15 +63,18 @@ public class DishesController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Put(int id, DishDTO dto)
     {
-        if (id != dto.Id)
-            return BadRequest();
+            if (id != dto.Id)
+                return BadRequest($"❌ ID в URL ({id}) не збігається з ID в тілі запиту ({dto.Id})");
 
-        var dish = await _context.Dishes
-            .Include(d => d.DishIngredients)
-            .FirstOrDefaultAsync(d => d.Id == id);
+            if (dto.Name == null || dto.Price <= 0 || dto.Calories < 0)
+                return BadRequest("❌ Некоректні значення у тілі запиту");
 
-        if (dish == null)
-            return NotFound();
+            var dish = await _context.Dishes
+                .Include(d => d.DishIngredients)
+                .FirstOrDefaultAsync(d => d.Id == id);
+
+            if (dish == null)
+                return NotFound($"❌ Страву з id = {id} не знайдено");
 
         // Оновлюємо основні поля
         dish.Name = dto.Name;
